@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-20",
+  "scope": "第一批体验优化",
+  "backendTests": {
+    "log": "tmp/experience-maven-final.log",
+    "errors": 0,
+    "skipped": 0,
+    "total": 56,
+    "failures": 0
+  },
+  "portalBuild": {
+    "log": "tmp/experience-portal-build.log",
+    "result": "passed"
+  },
+  "browser": {
+    "checks": 8,
+    "result": "passed",
+    "details": "docs/evidence/experience/browser-results.json",
+    "mode": "正式构建资源与API测试数据，无真实后端下单"
+  },
+  "calendarTests": "passed",
+  "package": {
+    "result": "passed",
+    "defaultPackage": "默认JAR被进程占用，使用独立目录构建并交付备用包",
+    "log": "tmp/experience-package.log",
+    "path": "air-ticket-server/target/air-ticket-server-1.0.0-experience.jar",
+    "sha256": "636D7B4FE0167D9A82B8606D9828ACF3DA2B621BE3DD0A528A799287082D1B72"
+  },
+  "packagedDatabaseSmoke": {
+    "result": "passed",
+    "schemaVersion": 10,
+    "log": "tmp/experience-packaged-smoke.log",
+    "database": "air_ticket_test"
+  },
+  "runningMainService": "未主动停止或重启"
+}

@@ -1,0 +1,10 @@
+CREATE TABLE passenger_profile (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ userid INT NOT NULL,
+ name VARCHAR(50) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uk_passenger_owner_name(userid,name),
+ CONSTRAINT fk_passenger_owner FOREIGN KEY(userid) REFERENCES `user`(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成人演示常用乘机人，不收集额外证件信息';
+INSERT INTO schema_version(version) VALUES(10);

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.airticket.mapper.JpddMapper">
+
+    <resultMap id="jpddResultMap" type="com.airticket.entity.Jpdd">
+        <id property="ddid" column="ddid"/>
+        <result property="hbid" column="hbid"/>
+        <result property="userid" column="userid"/>
+        <result property="cabinId" column="cabin_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="cost" column="cost"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="ordertime" column="ordertime"/>
+        <result property="status" column="status"/><result property="orderNo" column="order_no"/><result property="flightSnapshot" column="flight_snapshot"/>
+    </resultMap>
+
+    <resultMap id="jpddVOResultMap" type="com.airticket.vo.JpddVO">
+        <id property="ddid" column="ddid"/>
+        <result property="hbid" column="hbid"/>
+        <result property="userid" column="userid"/>
+        <result property="cabinId" column="cabin_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="cost" column="cost"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="ordertime" column="ordertime"/>
+        <result property="status" column="status"/><result property="orderNo" column="order_no"/><result property="flightSnapshot" column="flight_snapshot"/>
+        <result property="start" column="start"/>
+        <result property="end" column="end"/>
+        <result property="starttime" column="starttime"/>
+        <result property="place" column="place"/>
+        <result property="price" column="price"/>
+        <result property="companyName" column="company_name"/>
+        <result property="userName" column="user_name"/>
+        <result property="duration" column="duration"/>
+        <result property="xclb" column="xclb"/>
+        <result property="phone" column="phone"/>
+        <result property="cabinName" column="cabin_name"/>
+        <result property="cabinClass" column="cabin_class"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="jpddVOResultMap">
+        SELECT j.*,
+               h.start, h.`end`, h.starttime, h.place, h.price, h.duration,
+               c.company_name, u.name AS user_name,
+               cb.cabin_name, cb.cabin_class
+        FROM jpdd j
+        LEFT JOIN hbxx h ON j.hbid = h.hbid
+        LEFT JOIN company c ON h.company_id = c.company_id
+        LEFT JOIN `user` u ON j.userid = u.id
+        LEFT JOIN hbxx_cabin cb ON j.cabin_id = cb.cabin_id
+        WHERE j.userid = #{userid}
+        <if test="status != null">
+            AND j.status = #{status}
+        </if>
+        ORDER BY j.ordertime DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM jpdd
+        WHERE userid = #{userid}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <select id="findAllWithDetails" resultMap="jpddVOResultMap">
+        SELECT j.*,
+               h.start, h.`end`, h.starttime, h.place, h.price, h.duration,
+               c.company_name, u.name AS user_name,
+               cb.cabin_name, cb.cabin_class
+        FROM jpdd j
+        INNER JOIN `user` u ON j.userid = u.id
+        LEFT JOIN hbxx h ON j.hbid = h.hbid
+        LEFT JOIN company c ON h.company_id = c.company_id
+        LEFT JOIN hbxx_cabin cb ON j.cabin_id = cb.cabin_id
+        <where>
+            <if test="flightName != null and flightName != ''">
+                AND (h.start LIKE CONCAT('%', #{flightName}, '%') OR h.`end` LIKE CONCAT('%', #{flightName}, '%'))
+            </if>
+            <if test="userName != null and userName != ''">
+                AND u.name LIKE CONCAT('%', #{userName}, '%')
+            </if>
+        </where>
+        ORDER BY j.ordertime DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countAllWithDetails" resultType="long">
+        SELECT COUNT(*)
+        FROM jpdd j
+        INNER JOIN `user` u ON j.userid = u.id
+        LEFT JOIN hbxx h ON j.hbid = h.hbid
+        LEFT JOIN company c ON h.company_id = c.company_id
+        LEFT JOIN hbxx_cabin cb ON j.cabin_id = cb.cabin_id
+        <where>
+            <if test="flightName != null and flightName != ''">
+                AND (h.start LIKE CONCAT('%', #{flightName}, '%') OR h.`end` LIKE CONCAT('%', #{flightName}, '%'))
+            </if>
+            <if test="userName != null and userName != ''">
+                AND u.name LIKE CONCAT('%', #{userName}, '%')
+            </if>
+        </where>
+    </select>
+
+</mapper>

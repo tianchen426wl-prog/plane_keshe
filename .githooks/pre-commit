@@ -1,0 +1,2 @@
+#!/bin/sh
+exec pwsh -NoLogo -NoProfile -File scripts/check-repository.ps1

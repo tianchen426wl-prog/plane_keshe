@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.airticket.mapper.TdjpMapper">
+
+    <resultMap id="tdjpResultMap" type="com.airticket.entity.Tdjp">
+        <id property="id" column="id"/>
+        <result property="ddid" column="ddid"/>
+        <result property="canceltime" column="canceltime"/>
+        <result property="process" column="process"/><result property="reviewReason" column="review_reason"/>
+    </resultMap>
+
+    <resultMap id="tdjpVOResultMap" type="com.airticket.vo.TdjpVO">
+        <id property="id" column="id"/>
+        <result property="ddid" column="ddid"/>
+        <result property="canceltime" column="canceltime"/>
+        <result property="process" column="process"/><result property="reviewReason" column="review_reason"/>
+        <result property="hbid" column="hbid"/>
+        <result property="userid" column="userid"/>
+        <result property="quantity" column="quantity"/>
+        <result property="cost" column="cost"/>
+        <result property="ordertime" column="ordertime"/>
+        <result property="status" column="status"/>
+        <result property="start" column="start"/>
+        <result property="end" column="end"/>
+        <result property="starttime" column="starttime"/>
+        <result property="place" column="place"/>
+        <result property="price" column="price"/>
+        <result property="companyName" column="company_name"/>
+        <result property="duration" column="duration"/>
+        <result property="userName" column="user_name"/>
+        <result property="cabinName" column="cabin_name"/>
+        <result property="cabinClass" column="cabin_class"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="tdjpVOResultMap">
+        SELECT t.id, t.ddid, t.canceltime, t.process,t.review_reason,t.reviewer_id,t.review_time,
+               j.hbid, j.userid, j.quantity, j.cost, j.ordertime, j.status,
+               h.start, h.`end`, h.starttime, h.place, h.price, h.duration,
+               c.company_name, u.name AS user_name,
+               cb.cabin_name, cb.cabin_class
+        FROM tdjp t
+        INNER JOIN jpdd j ON t.ddid = j.ddid
+        INNER JOIN `user` u ON j.userid = u.id
+        LEFT JOIN hbxx h ON j.hbid = h.hbid
+        LEFT JOIN company c ON h.company_id = c.company_id
+        LEFT JOIN hbxx_cabin cb ON j.cabin_id = cb.cabin_id
+        <where>
+            <if test="process != null">
+                AND t.process = #{process}
+            </if>
+        </where>
+        ORDER BY t.canceltime DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM tdjp t
+        INNER JOIN jpdd j ON t.ddid = j.ddid
+        INNER JOIN `user` u ON j.userid = u.id
+        <where>
+            <if test="process != null">
+                AND t.process = #{process}
+            </if>
+        </where>
+    </select>
+
+</mapper>

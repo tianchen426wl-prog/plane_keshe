@@ -1,0 +1,11 @@
+# 兼容旧配置。新成员推荐运行 scripts/setup-env.ps1，在 .env 中填写配置。
+# 也可复制到项目根目录 .local/application-local.yml 后填写；不要在此模板中保存真实凭据。
+# 后端、数据库维护脚本共用以下账号和密码，DB_USERNAME / DB_PASSWORD 环境变量优先。
+# 字符串使用单引号；值中若有单引号，请写成两个单引号，例如 'it''s-a-password'。
+local:
+  db-username: 'root' # 改成自己的 MySQL 用户名
+  db-password: 'replace_with_local_password'
+  # 使用 README 中的 PowerShell 命令生成随机 Base64 密钥，再固定保存到本地配置。
+  jwt-secret: 'replace_with_a_random_base64_secret_at_least_32_bytes'
+  ai-enabled: false
+  deepseek-api-key: ''

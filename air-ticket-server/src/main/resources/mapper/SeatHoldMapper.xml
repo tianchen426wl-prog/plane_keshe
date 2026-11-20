@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.airticket.mapper.SeatHoldMapper">
+
+    <resultMap id="seatHoldVOResultMap" type="com.airticket.vo.SeatHoldVO">
+        <id property="holdId" column="hold_id"/>
+        <result property="hbid" column="hbid"/>
+        <result property="userid" column="userid"/>
+        <result property="cabinId" column="cabin_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="createTime" column="create_time"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="status" column="status"/>
+        <result property="start" column="start"/>
+        <result property="end" column="end"/>
+        <result property="starttime" column="starttime"/>
+        <result property="place" column="place"/>
+        <result property="duration" column="duration"/>
+        <result property="xclb" column="xclb"/>
+        <result property="companyName" column="company_name"/>
+        <result property="cabinName" column="cabin_name"/>
+        <result property="cabinClass" column="cabin_class"/>
+        <result property="cabinPrice" column="cabin_price"/>
+        <result property="totalCost" column="total_cost"/>
+    </resultMap>
+
+    <select id="findActiveHoldsByUser" resultMap="seatHoldVOResultMap">
+        SELECT s.hold_id, s.hbid, s.userid, s.cabin_id, s.quantity,
+               s.create_time, s.expire_time, s.status,
+               h.start, h.`end`, h.starttime, h.place, h.duration, h.xclb,
+               c.company_name,
+               cb.cabin_name, cb.cabin_class, s.unit_price AS cabin_price,
+               COALESCE(s.total_cost,s.unit_price * s.quantity) AS total_cost
+        FROM seat_hold s
+        LEFT JOIN hbxx h ON s.hbid = h.hbid
+        LEFT JOIN company c ON h.company_id = c.company_id
+        LEFT JOIN hbxx_cabin cb ON s.cabin_id = cb.cabin_id
+        WHERE s.userid = #{userid}
+          AND s.status = 0
+          AND s.expire_time >= NOW()
+        ORDER BY s.expire_time ASC
+    </select>
+
+</mapper>
