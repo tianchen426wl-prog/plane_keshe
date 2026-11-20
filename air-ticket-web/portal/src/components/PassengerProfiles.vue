@@ -1,7 +1,7 @@
 <template>
   <section v-loading="loading">
     <p class="muted">
-      保存常用成人乘机人，下次预订时直接选择。最多20位，仅保存演示姓名。
+      保存常用成人乘机人，下次预订时直接选择。最多保存20位。
     </p>
     <div v-if="error" class="ui-error" role="alert">
       {{ error }} <el-button type="text" @click="load">重新加载</el-button>

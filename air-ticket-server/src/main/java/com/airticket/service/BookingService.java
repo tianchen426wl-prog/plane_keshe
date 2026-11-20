@@ -91,7 +91,7 @@ public class BookingService {
   BigDecimal total=db.queryForObject("SELECT COALESCE(total_cost,unit_price*quantity) FROM seat_hold WHERE hold_id=?",BigDecimal.class,id);
   long order=insert("INSERT INTO jpdd(hbid,userid,cabin_id,quantity,cost,unit_price,ordertime,status,hold_id,order_no,flight_snapshot)VALUES(?,?,?,?,?,?,NOW(),1,?,?,?)",h.getHbid(),user,h.getCabinId(),h.getQuantity(),total,price,id,"AT"+UUID.randomUUID().toString().replace("-",""),data);
   fares.confirm(id,order);
-  db.update("UPDATE seat_hold SET status=1 WHERE hold_id=? AND status=0",id);log(order,"PAY",user,"模拟支付确认");return true;
+  db.update("UPDATE seat_hold SET status=1 WHERE hold_id=? AND status=0",id);log(order,"PAY",user,"预订确认完成");return true;
  }
  @Transactional public void cancel(Long id,Integer user){SeatHold h=ownedHold(id,user);if(h.getStatus()==3||h.getStatus()==2)return;if(h.getStatus()!=0)throw new ApiException(409,"已购票的占位不能取消");release(h,3);}
  @Transactional public void expire(Long id){

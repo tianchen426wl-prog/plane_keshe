@@ -1,0 +1,14 @@
+{
+  "databaseVersion": 11,
+  "historySnapshots": "Stored amounts and original snapshots preserved",
+  "inventoryMismatches": 0,
+  "backendFinalFocusedTests": 28,
+  "portalBuild": "passed",
+  "adminBuild": "passed",
+  "mainMigration": "passed",
+  "backendTests": 58,
+  "date": "2026-11-20",
+  "browserChecks": 8,
+  "rootCause": "Duplicate number column labels preserved legacy zero instead of cabin inventory",
+  "seatMismatches": 0
+}

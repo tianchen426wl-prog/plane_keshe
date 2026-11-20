@@ -37,15 +37,15 @@ export function calendarText(order) {
     [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//AirTicket Course//Itinerary//ZH",
+      "PRODID:-//AirTicket//Itinerary//ZH",
       "CALSCALE:GREGORIAN",
       "BEGIN:VEVENT",
-      `UID:airticket-order-${Number(order.ddid)}@course.local`,
+      `UID:airticket-order-${Number(order.ddid)}@airticket.local`,
       `DTSTAMP:${stamp(order.ordertime)}`,
       `DTSTART:${stamp(flight.starttime)}`,
       `DTEND:${stamp(flight.arrivalTime)}`,
       `SUMMARY:${escape(
-        "演示行程 " +
+        "航班行程 " +
           flight.start +
           " → " +
           flight.end +
@@ -58,7 +58,7 @@ export function calendarText(order) {
           (flight.departureTerminal || "")
       )}`,
       `DESCRIPTION:${escape(
-        "课程演示行程，不可用于真实乘机或报销。订单 " +
+        "行程订单 " +
           order.orderNo +
           "。请在出发前重新核对航班信息。"
       )}`,

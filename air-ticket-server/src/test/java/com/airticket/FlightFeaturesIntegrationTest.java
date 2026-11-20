@@ -114,6 +114,24 @@ class FlightFeaturesIntegrationTest {
   db.update("UPDATE hbxx_cabin SET price=900 WHERE cabin_id=?",cabin);assertTrue(booking.confirm(hold,user));assertTrue(booking.confirm(hold,user));
   assertEquals(400,n("SELECT cost FROM jpdd WHERE hold_id=?",hold));assertEquals(2,n("SELECT COUNT(*) FROM order_passenger WHERE order_id=?",order(hold)));assertEquals(4,n("SELECT COUNT(*) FROM order_price_item WHERE order_id=?",order(hold)));healthy();
  }
+ @Test void searchUsesCabinInventoryAndDistinguishesUnavailableStates(){
+  com.airticket.dto.FlightFilter f=new com.airticket.dto.FlightFilter();String day=catalog.today().plusDays(2).toString();
+  java.util.function.Supplier<Map<String,Object>> row=()->{
+   @SuppressWarnings("unchecked") List<Map<String,Object>> rows=(List<Map<String,Object>>)advancedSearch.search("北京","上海",day,f,"time",1,100,30).get("records");
+   return rows.stream().filter(r->((Number)r.get("hbid")).intValue()==flight).findFirst().orElseThrow();
+  };
+  assertEquals(0,n("SELECT number FROM hbxx WHERE hbid=?",flight));assertEquals(10,((Number)row.get().get("number")).intValue());assertEquals("AVAILABLE",row.get().get("bookingStatus"));
+  db.update("UPDATE hbxx SET number=999 WHERE hbid=?",flight);assertEquals(10,((Number)row.get().get("number")).intValue());
+  db.update("UPDATE hbxx_cabin SET available_number=2 WHERE cabin_id=?",cabin);f.setQuantity(3);assertEquals(2,((Number)row.get().get("number")).intValue());assertEquals("INSUFFICIENT_SEATS",row.get().get("bookingStatus"));assertNull(row.get().get("minTotal"));
+  db.update("UPDATE hbxx_cabin SET available_number=0 WHERE cabin_id=?",cabin);assertEquals("SOLD_OUT",row.get().get("bookingStatus"));
+  db.update("UPDATE hbxx_cabin SET status=0 WHERE cabin_id=?",cabin);assertEquals("INVENTORY_UNAVAILABLE",row.get().get("bookingStatus"));
+ }
+ @Test void customerCopyDoesNotMutateOriginalOrderSnapshot(){
+  long hold=booking.hold(quoted(1,List.of("1B"),user),user);booking.confirm(hold,user);int id=order(hold);
+  db.update("UPDATE jpdd SET price_snapshot=JSON_SET(price_snapshot,'$.notice','课程演示计价','$.items[1].name','演示税费','$.policy.description','课程演示规则') WHERE ddid=?",id);
+  String before=db.queryForObject("SELECT price_snapshot FROM jpdd WHERE ddid=?",String.class,id);
+  JsonNode visible=(JsonNode)fares.orderDetail(id,user).get("priceSnapshot");assertEquals("税费",visible.path("items").get(1).path("name").asText());assertFalse(visible.toString().contains("课程演示"));assertEquals(before,db.queryForObject("SELECT price_snapshot FROM jpdd WHERE ddid=?",String.class,id));healthy();
+ }
  @Test void expiryAndCancellationReleaseSeatsExactlyOnce(){
   long hold=booking.hold(quoted(1,List.of("1A"),user),user);db.update("UPDATE seat_hold SET expire_time=DATE_SUB(NOW(),INTERVAL 1 SECOND) WHERE hold_id=?",hold);assertFalse(booking.confirm(hold,user));booking.expire(hold);booking.cancel(hold,user);assertEquals(10,n("SELECT available_number FROM hbxx_cabin WHERE cabin_id=?",cabin));healthy();
  }

@@ -2,8 +2,8 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict')
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright')
 const root=path.resolve(__dirname,'..'),base=path.join(root,'air-ticket-web/portal/dist'),output=path.join(root,'docs/evidence/experience')
-const flight={hbid:73,start:'北京',end:'上海',flightNo:'演示0073',companyName:'演示航空',departureAirportName:'北京首都国际机场',arrivalAirportName:'上海虹桥国际机场',departureTerminal:'T2',arrivalTerminal:'T1',starttime:'2099-11-22T12:00:00+08:00',arrivalTime:'2099-11-22T14:00:00+08:00',saleStatus:1,operationalStatus:'SCHEDULED',saleOpenAt:'2020-01-01T00:00:00+08:00',saleCloseAt:'2099-11-22T11:00:00+08:00',number:10,minTotal:190,baggageKg:20,duration:'2小时',cabins:[{cabinId:7,cabinClass:1,cabinName:'经济舱',price:100,availableNumber:10,status:1}]}
-const policy={baggageKg:20,description:'演示退款规则'},items=[{code:'BASE',name:'基础运价',amount:200},{code:'TAX',name:'演示税费与附加费',amount:180}]
+const flight={hbid:73,start:'北京',end:'上海',flightNo:'航班0073',companyName:'云际航空',departureAirportName:'北京首都国际机场',arrivalAirportName:'上海虹桥国际机场',departureTerminal:'T2',arrivalTerminal:'T1',starttime:'2099-11-22T12:00:00+08:00',arrivalTime:'2099-11-22T14:00:00+08:00',saleStatus:1,operationalStatus:'SCHEDULED',saleOpenAt:'2020-01-01T00:00:00+08:00',saleCloseAt:'2099-11-22T11:00:00+08:00',number:10,minTotal:190,baggageKg:20,duration:'2小时',cabins:[{cabinId:7,cabinClass:1,cabinName:'经济舱',price:100,availableNumber:10,status:1}]}
+const policy={baggageKg:20,description:'退订按购票规则办理'},items=[{code:'BASE',name:'基础运价',amount:200},{code:'TAX',name:'税费与燃油附加费',amount:180}]
 const quote={quoteId:'fixture-quote',seats:['1B','1C'],passengers:['测试甲','测试乙'],quantity:2,policy,items,total:380,expiresAt:'2099-11-22T11:00:00+08:00'}
 ;(async()=>{
  fs.mkdirSync(output,{recursive:true});const browser=await chromium.launch({channel:'chrome',headless:true});const checks=[],errors=[],calls=[];let profiles=[{id:1,name:'测试甲'},{id:2,name:'测试乙'}]
@@ -17,7 +17,7 @@ const quote={quoteId:'fixture-quote',seats:['1B','1C'],passengers:['测试甲','
     if(p==='/api/ai/capabilities')data={enabled:true}
     else if(p==='/api/ai/itineraries/plan')data={constraints:{date:'2099-11-22',quantity:2,budget:600},candidates:[{...flight,quantity:2,estimatedTotal:380}],message:'已找到合适航班'}
     else if(p==='/api/airports')data=[{code:'PEK',city:'北京',name:'北京首都国际机场'},{code:'SHA',city:'上海',name:'上海虹桥国际机场'}]
-    else if(p.startsWith('/api/company/'))data={records:[{companyId:1,companyName:'演示航空'}]}
+    else if(p.startsWith('/api/company/'))data={records:[{companyId:1,companyName:'云际航空'}]}
     else if(p==='/api/flights/calendar')data={windowStart:'2099-11-20',windowEnd:'2099-12-19',dates:[{serviceDate:'2099-11-22',minTotal:380,flightCount:1}]}
     else if(p==='/api/flights')data={records:[flight],total:1}
     else if(p==='/api/flights/73')data=flight
@@ -33,7 +33,7 @@ const quote={quoteId:'fixture-quote',seats:['1B','1C'],passengers:['测试甲','
     else if(p==='/api/jpdd/hold'){assert.equal(request.postDataJSON().quantity,2);data={holdId:99}}
     else if(p==='/api/jpdd/holds/99')data={...flight,holdId:99,status:0,quantity:2,unitPrice:100,totalCost:380,priceSnapshot:quote,serverTime:new Date().toISOString(),expireTime:new Date(Date.now()+900000).toISOString()}
     else if(p==='/api/jpdd/create')data={ddid:42}
-    else if(p==='/api/jpdd/orders/42/details')data={ddid:42,orderNo:'DEMO42',status:1,quantity:2,cost:380,ordertime:'2099-11-20T12:00:00+08:00',flight,flightSnapshot:{...flight,cabinName:'经济舱'},priceSnapshot:quote,passengers:[{passengerName:'测**',seatNo:'1B'},{passengerName:'测**',seatNo:'1C'}],timeline:[{action:'PAY',logTime:'2099-11-20T12:00:00+08:00',remark:'模拟支付确认'}],refund:null}
+    else if(p==='/api/jpdd/orders/42/details')data={ddid:42,orderNo:'DEMO42',status:1,quantity:2,cost:380,ordertime:'2099-11-20T12:00:00+08:00',flight,flightSnapshot:{...flight,cabinName:'经济舱'},priceSnapshot:quote,passengers:[{passengerName:'测**',seatNo:'1B'},{passengerName:'测**',seatNo:'1C'}],timeline:[{action:'PAY',logTime:'2099-11-20T12:00:00+08:00',remark:'预订确认完成'}],refund:null}
     else throw Error('Unexpected fixture request '+request.method()+' '+p)
     return route.fulfill({json:{code:200,data}})
    }

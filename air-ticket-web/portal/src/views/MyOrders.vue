@@ -2,7 +2,7 @@
   <div class="my-orders">
     <h2 class="page-title">我的订单</h2>
     <el-tabs v-model="activeTab" @tab-click="handleTabChange">
-      <el-tab-pane label="待支付" name="hold" />
+      <el-tab-pane label="待确认" name="hold" />
       <el-tab-pane label="全部" name="" />
       <el-tab-pane label="已购票" name="1" />
       <el-tab-pane label="退订中" name="2" />
@@ -10,7 +10,7 @@
     </el-tabs>
 
     <el-dialog title="费用与座位" :visible.sync="detailsVisible" width="min(650px,94vw)"><div v-if="orderDetails"><p v-for="p in orderDetails.passengers" :key="p.seatNo">{{ p.passengerName }} · {{ p.seatNo }}</p><div v-if="orderDetails.priceSnapshot"><p v-for="i in orderDetails.priceSnapshot.items" :key="i.code">{{ i.name }}：¥{{ i.amount }}</p><p>{{ orderDetails.priceSnapshot.policy.description }}</p></div><p v-else>历史订单金额未拆分，按原有规则处理。</p><p>订单总额 ¥{{ orderDetails.cost }}</p><p v-if="orderDetails.refundAmount != null">已审核退款 ¥{{ orderDetails.refundAmount }}</p></div></el-dialog>
-    <!-- 待支付占位列表 -->
+    <!-- 待确认占位列表 -->
     <div v-if="activeTab === 'hold'" v-loading="loading">
       <div v-if="holdList.length > 0" class="hold-list">
         <el-card
@@ -21,7 +21,7 @@
         >
           <div class="hold-card-header">
             <span class="hold-id">占位单号：{{ item.holdId }}</span>
-            <el-tag type="warning" size="small">待支付</el-tag>
+            <el-tag type="warning" size="small">待确认</el-tag>
           </div>
           <el-descriptions :column="2" border size="small" class="hold-desc">
             <el-descriptions-item label="航空公司">{{
@@ -56,7 +56,7 @@
           </el-descriptions>
           <div class="hold-countdown">
             <el-alert
-              :title="'支付剩余时间：' + formatCountdown(item.expireTime)"
+              :title="'确认剩余时间：' + formatCountdown(item.expireTime)"
               :type="
                 getRemainSeconds(item.expireTime) <= 60 ? 'error' : 'warning'
               "
@@ -72,7 +72,7 @@
               :disabled="getRemainSeconds(item.expireTime) <= 0"
               @click="$router.push('/booking/' + item.holdId)"
             >
-              立即支付
+              继续预订
             </el-button>
             <el-button
               type="danger"
@@ -87,7 +87,7 @@
       </div>
       <el-empty
         v-if="!loading && holdList.length === 0"
-        description="暂无待支付订单"
+        description="暂无待确认订单"
       />
     </div>
 
@@ -166,7 +166,7 @@
 
     <!-- 支付确认对话框 -->
     <el-dialog
-      title="确认支付"
+      title="确认预订"
       :visible.sync="payDialogVisible"
       width="420px"
       :close-on-click-modal="false"
@@ -189,7 +189,7 @@
           <el-descriptions-item label="数量"
             >{{ payingHold.quantity }} 张</el-descriptions-item
           >
-          <el-descriptions-item label="支付金额">
+          <el-descriptions-item label="订单金额">
             <span style="color: #f56c6c; font-size: 20px; font-weight: bold"
               >¥{{ payingHold.totalCost }}</span
             >
@@ -199,7 +199,7 @@
       <div slot="footer">
         <el-button @click="payDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="paying" @click="confirmPay"
-          >确认支付</el-button
+          >确认预订</el-button
         >
       </div>
     </el-dialog>
@@ -384,7 +384,7 @@ export default {
         userid: userId,
       })
         .then(() => {
-          this.$message.success('支付成功！订单已生成')
+          this.$message.success('预订成功！订单已生成')
           this.payDialogVisible = false
           this.payingHold = null
           this.activeTab = '1'

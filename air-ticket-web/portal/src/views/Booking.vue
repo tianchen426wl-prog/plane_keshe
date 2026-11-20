@@ -87,7 +87,7 @@
           :loading="paying"
           :disabled="remaining <= 0"
           @click="pay"
-          >确认支付</el-button
+          >确认预订</el-button
         ><el-button
           class="cancel-hold"
           :loading="cancelling"
@@ -95,7 +95,7 @@
           @click="cancel"
           >取消占位并释放</el-button
         ><el-button type="text" @click="orders"
-          >稍后支付，前往我的订单</el-button
+          >稍后确认，前往我的订单</el-button
         >
       </aside>
     </div>

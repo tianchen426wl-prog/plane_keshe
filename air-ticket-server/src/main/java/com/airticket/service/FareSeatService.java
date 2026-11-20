@@ -26,7 +26,7 @@ public class FareSeatService {
  }
  public Map<String,Object> seats(int flight,int cabin){
   catalog.required("SELECT hbid FROM hbxx WHERE hbid=?",flight);
-  return Map.of("flightId",flight,"cabinId",cabin,"layoutNotice","课程演示客舱布局，不代表航空公司实际配舱", "seats",db.queryForList("SELECT seat_no,seat_row,seat_column,seat_fee,state FROM flight_seat WHERE hbid=? AND cabin_id=? ORDER BY seat_row,seat_column",flight,cabin).stream().map(FlightCatalogService::camel).collect(java.util.stream.Collectors.toList()));
+  return Map.of("flightId",flight,"cabinId",cabin,"layoutNotice","请选择座位并核对费用", "seats",db.queryForList("SELECT seat_no,seat_row,seat_column,seat_fee,state FROM flight_seat WHERE hbid=? AND cabin_id=? ORDER BY seat_row,seat_column",flight,cabin).stream().map(FlightCatalogService::camel).collect(java.util.stream.Collectors.toList()));
  }
  @Transactional
  public Map<String,Object> quote(OrderDTO dto,int user){
@@ -53,12 +53,12 @@ public class FareSeatService {
   BigDecimal qty=BigDecimal.valueOf(dto.getQuantity());
   List<Map<String,Object>>items=new ArrayList<>();
   items.add(Map.of("code","BASE","name","基础运价","amount",money(c.get("price")).multiply(qty),"refundable",false));
-  items.add(Map.of("code","TAX","name","演示税费","amount",money(p.get("tax_fee")).multiply(qty),"refundable",true));
-  items.add(Map.of("code","FUEL","name","演示附加费","amount",money(p.get("fuel_fee")).multiply(qty),"refundable",true));
+  items.add(Map.of("code","TAX","name","税费","amount",money(p.get("tax_fee")).multiply(qty),"refundable",true));
+  items.add(Map.of("code","FUEL","name","燃油附加费","amount",money(p.get("fuel_fee")).multiply(qty),"refundable",true));
   BigDecimal seatFee=selected.stream().map(s->money(s.get("seat_fee"))).reduce(BigDecimal.ZERO,BigDecimal::add);
   items.add(Map.of("code","SEAT","name","自选座位服务","amount",seatFee,"refundable",true));
   BigDecimal total=items.stream().map(i->money(i.get("amount"))).reduce(BigDecimal.ZERO,BigDecimal::add);
-  Map<String,Object>snap=new LinkedHashMap<>();snap.put("currency","CNY");snap.put("sourceType","DEMO");snap.put("notice","课程演示计价，非航空公司实时官方报价");snap.put("items",items);snap.put("total",total);snap.put("quantity",dto.getQuantity());snap.put("baseUnitPrice",c.get("price"));
+  Map<String,Object>snap=new LinkedHashMap<>();snap.put("currency","CNY");snap.put("sourceType","DEMO");snap.put("notice","费用以订单明细为准");snap.put("items",items);snap.put("total",total);snap.put("quantity",dto.getQuantity());snap.put("baseUnitPrice",c.get("price"));
   snap.put("seats",selected.stream().map(s->s.get("seat_no")).collect(java.util.stream.Collectors.toList()));snap.put("passengers",dto.getPassengers().stream().map(String::trim).collect(java.util.stream.Collectors.toList()));
   snap.put("policy",FlightCatalogService.camel(p));snap.put("adjacencyNotice","自动分配优先同排；座位可能分散，以所列座位号为准");
   String id=UUID.randomUUID().toString();db.update("INSERT INTO flight_quote(id,userid,hbid,cabin_id,quantity,total,snapshot,expires_at)VALUES(?,?,?,?,?,?,?,DATE_ADD(NOW(),INTERVAL 5 MINUTE))",id,user,dto.getHbid(),dto.getCabinId(),dto.getQuantity(),total,encode(snap));
@@ -99,19 +99,20 @@ public class FareSeatService {
   BigDecimal rate=cancelled?BigDecimal.ZERO:s.path("policy").path(left>=24*3600000L?"earlyRefundRate":"lateRefundRate").decimalValue();
   BigDecimal base=BigDecimal.ZERO;for(JsonNode i:s.path("items"))if("BASE".equals(i.path("code").asText()))base=i.path("amount").decimalValue();
   BigDecimal fee=base.multiply(rate).setScale(2,RoundingMode.HALF_UP);
-  return Map.of("amount",money(o.get("cost")).subtract(fee),"fee",fee,"mode",cancelled?"INVOLUNTARY":"VOLUNTARY","notice",cancelled?"航班取消，全额退还演示费用":"依据购票时规则：基础运价收取退订费，演示税费、附加费和选座费退还");
+  return Map.of("amount",money(o.get("cost")).subtract(fee),"fee",fee,"mode",cancelled?"INVOLUNTARY":"VOLUNTARY","notice",cancelled?"航班取消，全额退还订单费用":"依据购票时规则：基础运价收取退订费，税费、附加费和选座费退还");
  }
  public Map<String,Object> holdDetail(long hold,int user){
   Map<String,Object>r=FlightCatalogService.camel(catalog.required("SELECT s.*,c.cabin_name,h.start,h.`end`,h.starttime,h.arrival_time,h.flight_no,h.place,co.company_name FROM seat_hold s JOIN hbxx h ON h.hbid=s.hbid JOIN hbxx_cabin c ON c.cabin_id=s.cabin_id JOIN company co ON co.company_id=h.company_id WHERE s.hold_id=? AND s.userid=?",hold,user));
-  if(r.get("priceSnapshot")!=null)r.put("priceSnapshot",decode(r.get("priceSnapshot")));r.put("totalCost",r.get("totalCost")!=null?r.get("totalCost"):money(r.get("unitPrice")).multiply(new BigDecimal(r.get("quantity").toString())));r.put("serverTime",new java.util.Date());return r;
+  if(r.get("priceSnapshot")!=null)r.put("priceSnapshot",CustomerPresentation.snapshot(decode(r.get("priceSnapshot"))));r.put("totalCost",r.get("totalCost")!=null?r.get("totalCost"):money(r.get("unitPrice")).multiply(new BigDecimal(r.get("quantity").toString())));r.put("serverTime",new java.util.Date());return r;
  }
  public Map<String,Object> orderDetail(int order,int user){
   Map<String,Object>o=FlightCatalogService.camel(catalog.required("SELECT ddid,hbid,userid,quantity,ordertime,order_no,status,cost,pricing_mode,price_snapshot,flight_snapshot,refund_amount FROM jpdd WHERE ddid=? AND userid=?",order,user));
   o.put("flight",flightForSnapshot(((Number)o.get("hbid")).intValue()));
-  o.put("flightSnapshot",o.get("flightSnapshot")==null?null:decode(o.get("flightSnapshot")));
+  o.put("flightSnapshot",o.get("flightSnapshot")==null?null:CustomerPresentation.snapshot(decode(o.get("flightSnapshot"))));
   o.put("timeline",db.queryForList("SELECT action,log_time,remark FROM order_log WHERE ddid=? AND action IN('CREATE','PAY','REFUND_REQUEST','REFUND_APPROVE','REFUND_REJECT') ORDER BY log_time,log_id",order).stream().map(FlightCatalogService::camel).collect(java.util.stream.Collectors.toList()));
+  for(Map<String,Object> event:(List<Map<String,Object>>)o.get("timeline"))if("模拟支付确认".equals(event.get("remark")))event.put("remark","预订确认完成");
   o.put("refund",db.queryForList("SELECT process,canceltime,review_reason,review_time,refund_amount FROM tdjp WHERE ddid=?",order).stream().map(FlightCatalogService::camel).findFirst().orElse(null));
-  if(o.get("priceSnapshot")!=null){JsonNode snapshot=decode(o.get("priceSnapshot"));((com.fasterxml.jackson.databind.node.ObjectNode)snapshot).remove("passengers");o.put("priceSnapshot",snapshot);}
+  if(o.get("priceSnapshot")!=null){JsonNode snapshot=CustomerPresentation.snapshot(decode(o.get("priceSnapshot")));((com.fasterxml.jackson.databind.node.ObjectNode)snapshot).remove("passengers");o.put("priceSnapshot",snapshot);}
   List<Map<String,Object>>passengers=db.queryForList("SELECT passenger_name,seat_no FROM order_passenger WHERE order_id=? ORDER BY passenger_index",order);
   for(Map<String,Object>p:passengers){String name=p.get("passenger_name").toString();p.put("passenger_name",name.substring(0,1)+"**");}o.put("passengers",passengers.stream().map(FlightCatalogService::camel).collect(java.util.stream.Collectors.toList()));return o;
  }

@@ -17,7 +17,7 @@ public class ItineraryPlanningService {
  @Autowired private JdbcTemplate db;
  @Autowired private TransactionTemplate tx;
  @Value("${ai.deepseek.timeout-seconds:20}") private int timeout;
- public Map<String,Object> capabilities(){return Map.of("enabled",provider.available(),"provider","DeepSeek","scope","国内成人直飞单程规划；课程演示库存","tools",List.of("search_airports","search_flights","get_flight_detail","get_fare_rules","quote_itinerary"));}
+ public Map<String,Object> capabilities(){return Map.of("enabled",provider.available(),"provider","DeepSeek","scope","国内成人直飞单程规划","tools",List.of("search_airports","search_flights","get_flight_detail","get_fare_rules","quote_itinerary"));}
  public Map<String,Object> plan(int user,String message){
   if(!provider.available())throw new ApiException(503,"AI_NOT_CONFIGURED：智能规划未启用");
   if(message==null||message.isBlank()||message.length()>1000)throw new IllegalArgumentException("行程需求应为1～1000字");
@@ -41,7 +41,7 @@ public class ItineraryPlanningService {
      if(((Number)r.get("saleStatus")).intValue()!=1||!"SCHEDULED".equals(r.get("operationalStatus"))||r.get("minTotal")==null)continue;
      try{fares.sale(catalog.required("SELECT * FROM hbxx WHERE hbid=?",r.get("hbid")));}catch(ApiException e){continue;}
      BigDecimal total=new BigDecimal(r.get("minTotal").toString()).multiply(BigDecimal.valueOf(quantity));if(budget.signum()>0&&total.compareTo(budget)>0)continue;
-     Map<String,Object>c=new LinkedHashMap<>();for(String key:List.of("hbid","flightNo","companyName","start","end","starttime","arrivalTime","departureAirport","arrivalAirport","aircraftType","baggageKg"))c.put(key,r.get(key));c.put("estimatedTotal",total);c.put("quantity",quantity);c.put("notice","当前最低可售演示总价，未含自选付费座位；预订前重新报价");candidates.add(c);
+     Map<String,Object>c=new LinkedHashMap<>();for(String key:List.of("hbid","flightNo","companyName","start","end","starttime","arrivalTime","departureAirport","arrivalAirport","aircraftType","baggageKg"))c.put(key,r.get(key));c.put("estimatedTotal",total);c.put("quantity",quantity);c.put("notice","当前最低可售总价，未含自选付费座位；预订前重新报价");candidates.add(c);
     }
     if(!candidates.isEmpty()){
      // Only public candidate fields are sent. Names, passport data, user IDs and DB credentials never leave this service.
@@ -50,7 +50,7 @@ public class ItineraryPlanningService {
      for(JsonNode id:ranking.path("flightIds")){for(Map<String,Object>c:candidates)if(((Number)c.get("hbid")).intValue()==id.asInt()&&used.add(id.asInt()))ordered.add(c);}
      for(Map<String,Object>c:candidates)if(used.add(((Number)c.get("hbid")).intValue()))ordered.add(c);candidates=ordered;
     }
-    result.put("needsClarification",false);result.put("constraints",Map.of("start",from,"end",to,"date",date,"quantity",quantity,"budget",budget));result.put("candidates",candidates);result.put("message",candidates.isEmpty()?"没有满足日期、人数与预算的可售演示航班，请调整条件。":"已根据数据库当前可售航班筛选。请选择候选进入正常购票流程，价格与座位以最终占位为准。");
+    result.put("needsClarification",false);result.put("constraints",Map.of("start",from,"end",to,"date",date,"quantity",quantity,"budget",budget));result.put("candidates",candidates);result.put("message",candidates.isEmpty()?"没有满足日期、人数与预算的可售航班，请调整条件。":"已根据当前可售航班筛选。请选择候选进入正常购票流程，价格与座位以最终占位为准。");
    }
    String id=UUID.randomUUID().toString();result.put("planId",id);db.update("INSERT INTO ai_plan(id,userid,result)VALUES(?,?,?)",id,user,fares.encode(result));resultStatus="SUCCESS";return result;
   }finally{db.update("UPDATE ai_call_audit SET status=?,duration_ms=? WHERE id=?",resultStatus,(System.nanoTime()-started)/1000000,audit);}

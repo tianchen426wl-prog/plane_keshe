@@ -14,9 +14,9 @@ public class FlightSearchService {
  @Autowired private FlightCatalogService catalog;
  private String query(String start,String end,LocalDate from,LocalDate to,FlightFilter f,List<Object> args){
   f.validate();args.add(f.getQuantity());
-  String cabin=" WHERE status=1 AND available_number>=?";
+  String cabin=" WHERE status=1";
   if(f.getCabinClass()!=null){cabin+=" AND cabin_class=?";args.add(f.getCabinClass());}
-  String sql=" FROM hbxx h JOIN company co ON co.company_id=h.company_id JOIN airport a ON a.code=h.departure_airport JOIN airport b ON b.code=h.arrival_airport JOIN aircraft_layout l ON l.code=h.layout_code JOIN fare_policy p ON p.code=h.policy_code "+(f.isOnlyAvailable()?"JOIN":"LEFT JOIN")+" (SELECT hbid,MIN(price) base_min,SUM(available_number) available_total FROM hbxx_cabin"+cabin+" GROUP BY hbid) c ON c.hbid=h.hbid WHERE h.service_date BETWEEN ? AND ?";
+  String sql=" FROM hbxx h JOIN company co ON co.company_id=h.company_id JOIN airport a ON a.code=h.departure_airport JOIN airport b ON b.code=h.arrival_airport JOIN aircraft_layout l ON l.code=h.layout_code JOIN fare_policy p ON p.code=h.policy_code LEFT JOIN (SELECT hbid,MIN(CASE WHEN available_number>=? THEN price END) base_min,SUM(available_number) available_total FROM hbxx_cabin"+cabin+" GROUP BY hbid) c ON c.hbid=h.hbid WHERE h.service_date BETWEEN ? AND ?";
   args.add(from);args.add(to);
   sql+=catalog.visibleFlights();
   sql+=catalog.locationFilter("departure_airport",catalog.normalizeLocation(start),args);
@@ -27,10 +27,11 @@ public class FlightSearchService {
   if(f.getDepartureTo()!=null){sql+=" AND HOUR(h.starttime)<?";args.add(f.getDepartureTo());}
   if(f.getMinBaggage()!=null){sql+=" AND p.baggage_kg>=?";args.add(f.getMinBaggage());}
   if(f.getMaxTotal()!=null&&f.getMaxTotal().signum()>0){sql+=" AND (c.base_min+p.tax_fee+p.fuel_fee)*?<=?";args.add(f.getQuantity());args.add(f.getMaxTotal());}
-  if(f.isOnlyAvailable())sql+=" AND "+sale();
+  if(f.isOnlyAvailable())sql+=" AND c.base_min IS NOT NULL AND "+sale();
   return sql;
  }
- private String sale(){return "h.sale_status=1 AND h.operational_status='SCHEDULED' AND NOW() BETWEEN h.sale_open_at AND h.sale_close_at AND h.starttime>NOW()";}
+ private String sale(){return "h.sale_status=1 AND h.operational_status='SCHEDULED' AND (h.sale_open_at IS NULL OR NOW()>=h.sale_open_at) AND (h.sale_close_at IS NULL OR NOW()<h.sale_close_at) AND h.starttime>NOW()";}
+ private String bookingStatus(){return "CASE WHEN h.operational_status='CANCELLED' THEN 'CANCELLED' WHEN h.starttime<=NOW() THEN 'DEPARTED' WHEN h.sale_status<>1 THEN 'NOT_ON_SALE' WHEN h.operational_status<>'SCHEDULED' THEN 'FLIGHT_CHANGED' WHEN NOW()<h.sale_open_at THEN 'NOT_OPEN' WHEN NOW()>=h.sale_close_at THEN 'SALES_CLOSED' WHEN c.available_total IS NULL THEN 'INVENTORY_UNAVAILABLE' WHEN c.available_total=0 THEN 'SOLD_OUT' WHEN c.base_min IS NULL THEN 'INSUFFICIENT_SEATS' ELSE 'AVAILABLE' END";}
  public Map<String,Object> search(String start,String end,String date,FlightFilter filter,String sort,int page,int size,int days){
   if(page<1||size<1||size>100||!Set.of("price","time","arrival","duration").contains(sort))throw new IllegalArgumentException("分页或排序条件不合法");
   LocalDate today=LocalDate.now(FlightCatalogService.ZONE),day=date==null||date.isBlank()?today:LocalDate.parse(date);
@@ -39,8 +40,11 @@ public class FlightSearchService {
   long total=db.queryForObject("SELECT COUNT(*)"+from,Long.class,args.toArray());
   String order=Map.of("price","min_total IS NULL,min_total,h.starttime,h.hbid","time","h.starttime,h.hbid","arrival","h.arrival_time,h.hbid","duration","h.duration_minutes,h.starttime,h.hbid").get(sort);
   args.add(size);args.add((long)(page-1)*size);
-  String sql="SELECT h.*,co.company_name,co.company_picture,a.name departure_airport_name,b.name arrival_airport_name,l.aircraft_type,p.baggage_kg,p.description fare_description,c.available_total number,(c.base_min+p.tax_fee+p.fuel_fee) min_total"+from+" ORDER BY "+order+" LIMIT ? OFFSET ?";
-  return Map.of("total",total,"exists",total>0,"message",total>0?"存在符合条件的航班":"没有符合条件的航班","records",db.queryForList(sql,args.toArray()).stream().map(FlightCatalogService::camel).collect(Collectors.toList()),"page",page,"pageSize",size,"quantity",filter.getQuantity());
+  String sql="SELECT h.*,co.company_name,co.company_picture,a.name departure_airport_name,b.name arrival_airport_name,l.aircraft_type,p.baggage_kg,p.description fare_description,c.available_total,(c.base_min+p.tax_fee+p.fuel_fee) min_total,"+bookingStatus()+" booking_status"+from+" ORDER BY "+order+" LIMIT ? OFFSET ?";
+  List<Map<String,Object>> records=db.queryForList(sql,args.toArray()).stream().map(FlightCatalogService::camel).collect(Collectors.toList());
+  // Do not alias over h.number: ColumnMapRowMapper preserves the first duplicate label.
+  for(Map<String,Object> record:records)record.put("number",record.remove("availableTotal"));
+  return Map.of("total",total,"exists",total>0,"message",total>0?"存在符合条件的航班":"没有符合条件的航班","records",records,"page",page,"pageSize",size,"quantity",filter.getQuantity(),"serverTime",ZonedDateTime.now(FlightCatalogService.ZONE));
  }
  public Map<String,Object> calendar(String start,String end,FlightFilter filter,int days){
   LocalDate today=LocalDate.now(FlightCatalogService.ZONE);List<Object> args=new ArrayList<>();String from=query(start,end,today,today.plusDays(days-1),filter,args);

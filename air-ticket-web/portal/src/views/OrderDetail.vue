@@ -13,7 +13,7 @@
     <el-skeleton v-if="loading" :rows="8" animated />
     <template v-else-if="order">
       <div class="actions">
-        <el-button @click="print">打印演示行程卡</el-button
+        <el-button @click="print">打印行程卡</el-button
         ><el-button :disabled="!canExport" @click="download"
           >加入日历（ICS）</el-button
         ><el-button
@@ -28,7 +28,7 @@
       <article class="surface itinerary-sheet">
         <div class="sheet-heading">
           <div>
-            <small class="muted">课程演示行程卡</small>
+            <small class="muted">行程信息</small>
             <h2>{{ flight.start }} → {{ flight.end }}</h2>
             <p>
               {{ flight.companyName }} · {{ flight.flightNo || "历史航班" }}
@@ -36,7 +36,7 @@
           </div>
           <el-tag>{{ statusLabel }}</el-tag>
         </div>
-        <p class="demo-notice">课程演示记录，不可用于真实乘机或报销。</p>
+        <p class="itinerary-notice">请核对出发日期、机场及航站楼，提前安排出行。</p>
         <div class="route-grid">
           <section>
             <h3>出发</h3>
@@ -197,7 +197,7 @@ export default {
       return (
         {
           CREATE: "订单已创建",
-          PAY: "模拟支付成功",
+          PAY: "预订确认完成",
           REFUND_REQUEST: "已申请退订",
           REFUND_APPROVE: "退订审核通过",
           REFUND_REJECT: "退订审核未通过",
@@ -233,7 +233,7 @@ export default {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = "演示行程-" + this.order.ddid + ".ics";
+        link.download = "行程-" + this.order.ddid + ".ics";
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       } catch (e) {
@@ -290,7 +290,7 @@ export default {
 .route-grid strong {
   font-size: 20px;
 }
-.demo-notice {
+.itinerary-notice {
   padding: 12px;
   background: #fff6df;
   border-radius: 8px;

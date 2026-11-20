@@ -5,13 +5,13 @@
         <img @error="companyImageError" loading="lazy" :src="getCompanyImage(company.companyName, company.companyPicture)" alt=""/>
       </div>
       <h1 class="company-name">{{ company.companyName }}</h1>
-      <p v-if="company.sourceUrl" class="source"><a :href="company.sourceUrl" target="_blank" rel="noopener noreferrer">航空公司官方资料来源</a> · 核实日期 {{ company.verifiedAt }}</p><el-divider />
+      <p v-if="company.sourceUrl" class="source"><a :href="company.sourceUrl" target="_blank" rel="noopener noreferrer">官方网站</a></p><el-divider />
       <el-descriptions :column="2" border>
         <el-descriptions-item label="公司名称">{{ company.companyName }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ company.companyPhone }}</el-descriptions-item>
         <el-descriptions-item label="公司简介" :span="2">{{ company.companyProfile }}</el-descriptions-item>
-        <el-descriptions-item label="企业文化" :span="2">{{ company.companyCulture }}</el-descriptions-item>
-        <el-descriptions-item label="公司宗旨" :span="2">{{ company.companyPurport }}</el-descriptions-item>
+        <el-descriptions-item v-if="company.companyCulture" label="企业文化" :span="2">{{ company.companyCulture }}</el-descriptions-item>
+        <el-descriptions-item v-if="company.companyPurport" label="公司宗旨" :span="2">{{ company.companyPurport }}</el-descriptions-item>
       </el-descriptions>
       <div class="back-btn">
         <el-button type="primary" @click="$router.back()">返回列表</el-button>

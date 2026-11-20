@@ -1,14 +1,14 @@
 # 航空售票管理系统 · plane_keshe
 
-基于 Spring Boot 2.7.18、MyBatis、MySQL、Vue 2 和 Element UI 的软件工程课程设计项目，包含用户门户与管理后台。
+基于 Spring Boot 2.7.18、MyBatis、MySQL、Vue 2 和 Element UI 的航空售票管理系统，包含用户门户与管理后台。
 
-当前已实现：14 家航司官方资料与本地品牌图片、62 个城市、65 个机场、182 组往返航线、364 个每日参考班期、未来 30 天滚动航班、费用分项与锁价、具体座位选择、限时占位、模拟支付、规则化退款、后台权限和订单审计，以及 DeepSeek 行程规划。数据库结构当前版本为 **V10**，启动时通过 Flyway 自动初始化和迁移。
+当前已实现：14 家航司官方资料与本地品牌图片、62 个城市、65 个机场、182 组往返航线、364 个每日班期、未来 30 天滚动航班、费用分项与锁价、具体座位选择、限时占位、订单确认、规则化退款、后台权限和订单审计，以及 DeepSeek 行程规划。数据库结构当前版本为 **V11**，启动时通过 Flyway 自动初始化和迁移。
 
-航司资料来自官方来源；航班时刻、票价、行李产品、航站楼分配和座位布局均为**课程演示配置**，不提供真实航空出票或真实资金支付。
+系统维护本地航班目录、库存、报价与订单。外部航空出票和支付网关尚未接入，运行配置与对接边界在部署时独立管理。
 
 本轮航线覆盖、查询规则和参考数据来源见[国内航线扩充说明](docs/国内航线扩充说明.md)。
 
-第一批体验改造已增加：搜索人数与整单预算等筛选、AI 候选直接衔接预订、常用成人乘机人、三步预订、完整订单详情、打印演示行程卡与 ICS 日历导出。实现范围与验证记录见[第一批体验优化交付说明](docs/第一批体验优化交付说明.md)。
+第一批体验改造已增加：搜索人数与整单预算等筛选、AI 候选直接衔接预订、常用成人乘机人、三步预订、完整订单详情、打印行程卡与 ICS 日历导出。实现范围与验证记录见[第一批体验优化交付说明](docs/第一批体验优化交付说明.md)。
 
 GitHub 提交范围、密钥保护和后续增量同步方式见 [GitHub 提交与同步说明](docs/GitHub提交与同步说明.md)。本机 `.env`、依赖、构建包和日志不进入仓库。
 
@@ -41,7 +41,7 @@ npm.cmd run build --prefix air-ticket-web/admin
 ./start_backend.ps1
 ```
 
-另开一个 PowerShell 7 终端，在项目根目录执行 `./start_frontend.ps1`，然后访问门户 `http://127.0.0.1:18081` 和管理后台 `http://127.0.0.1:18082`。默认后端端口为 `.env` 中的 18080。MySQL 服务需提前安装并启动；后端自动创建缺失库并执行 V1～V10 迁移，首次初始化账号需具备建库、建表、视图、存储过程及触发器等权限，无需手动导入 SQL。
+另开一个 PowerShell 7 终端，在项目根目录执行 `./start_frontend.ps1`，然后访问门户 `http://127.0.0.1:18081` 和管理后台 `http://127.0.0.1:18082`。默认后端端口为 `.env` 中的 18080。MySQL 服务需提前安装并启动；后端自动创建缺失库并执行 V1～V11 迁移，首次初始化账号需具备建库、建表、视图、存储过程及触发器等权限，无需手动导入 SQL。
 
 公开提交 `.env.example`、启动脚本和依赖清单；`.env`、`.local`、构建产物和依赖目录均已被 Git 忽略。已有 `.local/application-local.yml` 的成员可执行 `./scripts/setup-env.ps1 -FromLocalConfig` 迁移到 `.env`，原文件保留；已有 `.env` 时初始化脚本不会覆盖。
 
@@ -59,7 +59,7 @@ $env:JAVA_HOME = 'C:\Program Files\Java\jdk-17.0.5'
 ./scripts/run-server.ps1 -Port 18080 -Database air_ticket
 ```
 
-该命令持续占用终端 A，**保持窗口运行**。脚本自动加载项目根目录 `.env`，使用 JAVA_HOME 对应的 Java，并兼容原有 `.local/application-local.yml` 配置。启动顺序为：连接 MySQL → 创建缺失数据库 → Flyway 建表/升级至 V10 → 启动 HTTP → 补齐未来 30 天航班。看到 `Project database ... is ready` 和 `Tomcat started on port(s): 18080` 后可访问；首次生成航班比普通重启更慢。初始化失败时后端停止启动，不会开放半套数据库的业务服务。
+该命令持续占用终端 A，**保持窗口运行**。脚本自动加载项目根目录 `.env`，使用 JAVA_HOME 对应的 Java，并兼容原有 `.local/application-local.yml` 配置。启动顺序为：连接 MySQL → 创建缺失数据库 → Flyway 建表/升级至 V11 → 启动 HTTP → 补齐未来 30 天航班。看到 `Project database ... is ready` 和 `Tomcat started on port(s): 18080` 后可访问；首次生成航班比普通重启更慢。初始化失败时后端停止启动，不会开放半套数据库的业务服务。
 
 ### 终端 B：启动门户和后台
 
@@ -156,14 +156,14 @@ $PSVersionTable.PSVersion
 
 ## 3. 首次安装、升级与重新构建
 
-本机已有 V10 数据库与构建产物可跳过本节。换电脑、拿到新源码或修改程序后，按对应步骤处理。
+本机已有 V11 数据库与构建产物可跳过本节。换电脑、拿到新源码或修改程序后，按对应步骤处理。
 
 ### 3.1 数据库：默认随后端自动建立
 
 新成员只需在 `.env` 中配置自己的 MySQL 和 JWT；无需预先创建 air_ticket 或手动执行 SQL。先按下两节构建，再按第 1 节启动后端。默认执行：
 
 1. 库不存在：仅在 MySQL 明确返回“Unknown database”时创建配置指定的库。
-2. 库为空：执行 jar 内 V1 至 V10，初始化管理员、菜单、14 家航司、机场、布局、费用规则及班期；不导入历史乘机人和固定日期旧航班。
+2. 库为空：执行 jar 内 V1 至 V11，初始化管理员、菜单、14 家航司、机场、布局、费用规则及班期；不导入历史乘机人和固定日期旧航班。
 3. 已有项目库：核对结构和版本，通过后接入 Flyway；原 V8 库记录 V8 BASELINE，不重导 V1，不重置账号、订单或库存。
 4. 后续启动：校验已执行脚本，只执行新增版本；无变更时跳过。
 5. 迁移完成后才启动业务组件与定时任务，补齐实际查询日期的航班实例。
@@ -198,7 +198,7 @@ SELECT * FROM v_inventory_health WHERE difference <> 0;
 SELECT * FROM v_seat_health WHERE difference <> 0 OR capacity_difference <> 0;
 ```
 
-空库初始化应有 V1～V10 SQL 记录；原有 V8 库接管后应有 V8 BASELINE 和 V9、V10 升级记录，这也是正常状态。后两项正常应为空集。`schema_version` 保留供旧库兼容，新迁移以 `flyway_schema_history` 为准。
+空库初始化应有 V1～V11 SQL 记录；原有 V8 库接管后应有 V8 BASELINE 和 V9、V10 升级记录，这也是正常状态。后两项正常应为空集。`schema_version` 保留供旧库兼容，新迁移以 `flyway_schema_history` 为准。
 
 非项目非空库、版本不连续、脚本校验和不符或权限不足时会明确失败，不会自动清库或忽略错误。MySQL 的 DDL 不能整体回滚；失败迁移请先核对和备份后修复，不要直接删除版本记录或自动执行 Flyway clean/repair。
 
@@ -388,7 +388,7 @@ $env:DEEPSEEK_MODEL = 'deepseek-flash'
 ```text
 air-ticket-server/           Spring Boot 后端
   src/main/                 业务、接口与配置
-    resources/db/migration/  V1～V10 正式SQL，随jar交付
+    resources/db/migration/  V1～V11 正式SQL，随jar交付
   src/test/                 MySQL 集成测试
   sql/legacy/               旧SQL归档，不用于自动初始化
 air-ticket-web/

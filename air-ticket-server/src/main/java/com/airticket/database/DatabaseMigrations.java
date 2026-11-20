@@ -80,7 +80,7 @@ public final class DatabaseMigrations {
         Set<Integer> versions = new HashSet<>();
         try (Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT version FROM schema_version")) {while(r.next()) versions.add(r.getInt(1));}
         int version=versions.stream().mapToInt(Integer::intValue).max().orElse(0);
-        if(version<1||version>10)throw new IllegalStateException("无法识别旧库版本；当前可自动接管V1～V10，请核对schema_version");
+        if(version<1||version>11)throw new IllegalStateException("无法识别旧库版本；当前可自动接管V1～V11，请核对schema_version");
         for(int i=2;i<=version;i++)if(!versions.contains(i))throw new IllegalStateException("旧库版本记录不连续，拒绝跳过缺失迁移V"+i);
         return version;
     }

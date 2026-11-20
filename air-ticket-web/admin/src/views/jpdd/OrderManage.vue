@@ -206,7 +206,9 @@ export default {
         const data = res.data
         this.tableData = (data.records || data.list || []).map((order) => {
           try {
-            return { ...order, ...JSON.parse(order.flightSnapshot || '{}') }
+            const row={ ...order, ...JSON.parse(order.flightSnapshot || '{}') }
+            if(/^参考[0-9]+$/.test(row.flightNo||''))row.flightNo='航班'+row.flightNo.slice(2)
+            return row
           } catch (e) {
             return order
           }

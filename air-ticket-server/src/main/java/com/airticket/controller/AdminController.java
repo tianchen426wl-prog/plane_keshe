@@ -253,7 +253,7 @@ public class AdminController {
     public Result<Void> reject(@PathVariable Integer id,@RequestBody Map<String,String> body){booking.review(id,false,body.get("reason"),com.airticket.util.CurrentUser.id());return Result.success();}
     @Autowired private org.springframework.jdbc.core.JdbcTemplate db;
     @GetMapping("/jpdd/log/{id}")
-    public Result<List<Map<String,Object>>> logs(@PathVariable Integer id){return Result.success(db.queryForList("SELECT log_id,action,old_status,new_status,log_time,operator,remark FROM order_log WHERE ddid=? ORDER BY log_id",id));}
+    public Result<List<Map<String,Object>>> logs(@PathVariable Integer id){List<Map<String,Object>> rows=db.queryForList("SELECT log_id,action,old_status,new_status,log_time,operator,remark FROM order_log WHERE ddid=? ORDER BY log_id",id);for(Map<String,Object> row:rows)row.put("remark",com.airticket.service.CustomerPresentation.remark(row.get("remark")));return Result.success(rows);}
     @PostMapping("/logout")
     public Result<Void> logout(){db.update("UPDATE admin SET auth_version=auth_version+1 WHERE id=?",com.airticket.util.CurrentUser.id());return Result.success();}
 }

@@ -47,6 +47,7 @@
   </article>
 </template>
 <script>
+import { bookingStatus, bookingLabels } from '../utils/flightAvailability'
 export default {
   props: {
     flight: { type: Object, required: true },
@@ -57,22 +58,7 @@ export default {
     canBook() {
       return this.saleLabel === "可预订" && this.flight.minTotal != null;
     },
-    saleLabel() {
-      const now = Date.now();
-      if (this.flight.operationalStatus === "CANCELLED") return "已取消";
-      if (this.flight.saleStatus !== 1) return "已停售";
-      if (
-        this.flight.saleOpenAt &&
-        new Date(this.flight.saleOpenAt).getTime() > now
-      )
-        return "未开售";
-      if (
-        this.flight.saleCloseAt &&
-        new Date(this.flight.saleCloseAt).getTime() <= now
-      )
-        return "已截止";
-      return this.flight.number > 0 ? "可预订" : "已售罄";
-    },
+    saleLabel() { return bookingLabels[bookingStatus(this.flight,this.quantity)] || '暂不可预订' },
     arrival() {
       return this.flight.arrivalTime
         ? new Date(this.flight.arrivalTime).toLocaleString("zh-CN", {
